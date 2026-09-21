@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/style-perguntas.css">
+    <title>Resultado</title>
+    <style>
+        body { justify-content: flex-start; padding: 32px 16px 48px; }
+
+        .resultado-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+            width: 100%;
+            max-width: 720px;
+        }
+
+        .princesa-destaque {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-size: 28px;
+            color: #c94f7c;
+            text-align: center;
+            background: #fff0fa;
+            border: 4px solid #ff66c4;
+            border-radius: 24px;
+            padding: 20px 32px;
+            box-shadow: 0 4px 16px rgba(255,102,196,0.2);
+        }
+
+        .princesa-destaque span {
+            display: block;
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+
+        /* ── Gráfico de barras ── */
+        .grafico {
+            width: 100%;
+            background: #fff0fa;
+            border-radius: 20px;
+            padding: 24px 28px;
+            box-shadow: 0 4px 16px rgba(255,102,196,0.15);
+        }
+
+        .grafico h3 {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            color: #c94f7c;
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .barra-linha {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .barra-label {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-size: 16px;
+            color: #c94f7c;
+            width: 130px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .barra-track {
+            flex: 1;
+            background: #ffd6f0;
+            border-radius: 30px;
+            height: 28px;
+            overflow: hidden;
+        }
+
+        .barra-fill {
+            height: 100%;
+            border-radius: 30px;
+            background: linear-gradient(90deg, #ff66c4, #e7879f);
+            transition: width 0.8s ease;
+            min-width: 4px;
+        }
+
+        .barra-fill.destaque {
+            background: linear-gradient(90deg, #d4380d, #ff7c50);
+        }
+
+        .barra-pts {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-size: 15px;
+            color: #c94f7c;
+            width: 32px;
+            flex-shrink: 0;
+            font-weight: bold;
+        }
+
+        .btn-jogar-dnv {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-size: 20px;
+            background-color: #ff66c4;
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            padding: 14px 40px;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(255,102,196,0.4);
+            transition: transform 0.15s, background 0.2s;
+        }
+
+        .btn-jogar-dnv:hover {
+            background-color: #e050b0;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+    <h2 class="titulo-pergunta">🌟 Resultado do Quiz das Princesas! 🌟</h2>
+
+    <div class="resultado-wrapper">
+
+        <div class="princesa-destaque" id="destaque">
+            <span id="destaque-emoji">✨</span>
+            <span id="destaque-texto">Calculando...</span>
+        </div>
+
+        <div class="grafico">
+            <h3>📊 Pontuação por princesa</h3>
+            <div id="grafico-barras"></div>
+        </div>
+
+        <p id="status-salvo" style="font-family: Georgia, serif; color:#c94f7c;"></p>
+
+        <button class="btn-jogar-dnv" onclick="jogarDenovo()">🔄 Jogar de novo</button>
+    </div>
+
+    <script>
+        const INFO = {
+            elsa:     { nome: 'Elsa',     emoji: '❄️' },
+            moana:    { nome: 'Moana',    emoji: '🌊' },
+            tiana:    { nome: 'Tiana',    emoji: '🌟' },
+            merida:   { nome: 'Mérida',   emoji: '🏹' },
+            rapunzel: { nome: 'Rapunzel', emoji: '☀️' },
+            ariel:    { nome: 'Ariel',    emoji: '🐠' },
+        };
+
+        function getPontos() {
+            try { return JSON.parse(sessionStorage.getItem('quizPontos')) || {}; }
+            catch { return {}; }
+        }
+
+        function render() {
+            const pontos = getPontos();
+
+            // Garante que todas as princesas aparecem
+            for (const k of Object.keys(INFO)) {
+                if (!pontos[k]) pontos[k] = 0;
+            }
+
+            // Encontra a vencedora
+            const vencedora = Object.entries(pontos).sort((a, b) => b[1] - a[1])[0][0];
+            const maxPts = Math.max(...Object.values(pontos), 1);
+
+            // Destaque
+            document.getElementById('destaque-emoji').textContent = INFO[vencedora].emoji;
+            document.getElementById('destaque-texto').textContent =
+                `Você seria ${INFO[vencedora].nome}!`;
+
+            // Gráfico
+            const container = document.getElementById('grafico-barras');
+            container.innerHTML = '';
+
+            // Ordena do maior para o menor
+            const ordem = Object.entries(pontos).sort((a, b) => b[1] - a[1]);
+
+            for (const [key, pts] of ordem) {
+                const pct = (pts / maxPts) * 100;
+                const eh_vencedora = key === vencedora;
+                const info = INFO[key] || { nome: key, emoji: '👑' };
+
+                const linha = document.createElement('div');
+                linha.className = 'barra-linha';
+                linha.innerHTML = `
+                    <div class="barra-label">${info.emoji} ${info.nome}</div>
+                    <div class="barra-track">
+                        <div class="barra-fill ${eh_vencedora ? 'destaque' : ''}"
+                             style="width: ${pct}%"></div>
+                    </div>
+                    <div class="barra-pts">${pts}</div>
+                `;
+                container.appendChild(linha);
+            }
+
+            salvarResultado(pontos, vencedora);
+
+            // Anima as barras após inserir no DOM
+            requestAnimationFrame(() => {
+                document.querySelectorAll('.barra-fill').forEach(b => {
+                    const w = b.style.width;
+                    b.style.width = '0%';
+                    requestAnimationFrame(() => { b.style.width = w; });
+                });
+            });
+        }
+
+        const API_URL = 'http://localhost:3000/resultado';
+
+        // Envia o resultado para o banco de dados via HTTP POST
+        async function salvarResultado(pontos, vencedora) {
+            const status = document.getElementById('status-salvo');
+
+            // Evita salvar duas vezes se a página for recarregada
+            if (sessionStorage.getItem('quizSalvo')) {
+                status.textContent = '✅ Resultado já salvo no banco de dados.';
+                return;
+            }
+
+            status.textContent = '⏳ Salvando resultado...';
+            try {
+                const resposta = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nome: sessionStorage.getItem('quizNome') || '',
+                        princesa: vencedora,
+                        pontos: pontos
+                    })
+                });
+                const dados = await resposta.json();
+
+                if (!resposta.ok) throw new Error(dados.erro || 'Erro desconhecido');
+
+                sessionStorage.setItem('quizSalvo', '1');
+                status.textContent = '✅ Resultado salvo no banco de dados! (id ' + dados.id + ')';
+            } catch (erro) {
+                status.textContent = '❌ Não foi possível salvar o resultado: ' + erro.message;
+            }
+        }
+
+        function jogarDenovo() {
+            sessionStorage.removeItem('quizPontos');
+            sessionStorage.removeItem('quizSalvo');
+            location.href = '../index.html';
+        }
+
+        render();
+    </script>
+</body>
+</html>
